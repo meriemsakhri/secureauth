@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.secureauth.auth.dto.LoginRequest;
 import com.secureauth.auth.exception.AccountLockedException;
 import com.secureauth.auth.exception.InvalidCredentialsException;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.secureauth.audit.model.AuditEventType;
 import com.secureauth.audit.service.AuditLogService;
@@ -39,15 +38,11 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditLogService auditLogService;
-
-    @Value("${app.security.max-failed-attempts}")
-    private int maxFailedAttempts;
-
-    @Value("${app.security.lockout-duration-minutes}")
-    private int lockoutDurationMinutes;
+    private final LoginAttemptService loginAttemptService;
 
     @Transactional
-    public AuthResponse signup(SignupRequest request, String ipAddress) {        if (userRepository.existsByEmail(request.getEmail())) {
+    public AuthResponse signup(SignupRequest request, String ipAddress) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException("Email already in use");
         }
 
@@ -102,17 +97,19 @@ public class AuthService {
             throw new IllegalStateException("SHA-256 algorithm not available", e);
         }
     }
+
     @Transactional
-    public AuthResponse login(LoginRequest request, String ipAddress) {        User user = userRepository.findByEmail(request.getEmail())
+    public AuthResponse login(LoginRequest request, String ipAddress) {
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
         if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(OffsetDateTime.now())) {
-            auditLogService.log(user, AuditEventType.LOGIN_FAIL, ipAddress, "Attempt on locked account");
+            loginAttemptService.recordLockedAttempt(user, ipAddress);
             throw new AccountLockedException("Account is temporarily locked. Try again later.");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            handleFailedLogin(user, ipAddress);
+            loginAttemptService.recordFailedAttempt(user, ipAddress);
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
@@ -123,21 +120,5 @@ public class AuthService {
         auditLogService.log(user, AuditEventType.LOGIN_SUCCESS, ipAddress, null);
 
         return issueTokens(user);
-    }
-
-    private void handleFailedLogin(User user, String ipAddress) {
-        int attempts = user.getFailedAttempts() + 1;
-        user.setFailedAttempts(attempts);
-
-        if (attempts >= maxFailedAttempts) {
-            user.setLockedUntil(OffsetDateTime.now().plusMinutes(lockoutDurationMinutes));
-            auditLogService.log(user, AuditEventType.ACCOUNT_LOCKED, ipAddress,
-                    "Locked after " + attempts + " failed attempts");
-        } else {
-            auditLogService.log(user, AuditEventType.LOGIN_FAIL, ipAddress,
-                    "Failed attempt " + attempts + " of " + maxFailedAttempts);
-        }
-
-        userRepository.save(user);
     }
 }
