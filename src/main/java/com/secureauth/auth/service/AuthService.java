@@ -1,5 +1,9 @@
 package com.secureauth.auth.service;
 
+import com.secureauth.auth.dto.RefreshTokenRequest;
+import com.secureauth.auth.exception.InvalidTokenException;
+import io.jsonwebtoken.JwtException;
+
 import com.secureauth.auth.dto.AuthResponse;
 import com.secureauth.auth.dto.SignupRequest;
 import com.secureauth.auth.exception.EmailAlreadyExistsException;
@@ -120,5 +124,45 @@ public class AuthService {
         auditLogService.log(user, AuditEventType.LOGIN_SUCCESS, ipAddress, null);
 
         return issueTokens(user);
+    }
+    @Transactional
+    public AuthResponse refresh(RefreshTokenRequest request) {
+        String rawToken = request.getRefreshToken();
+
+        try {
+            if (jwtService.isTokenExpired(rawToken) || !jwtService.isRefreshToken(rawToken)) {
+                throw new InvalidTokenException("Invalid or expired refresh token");
+            }
+        } catch (JwtException e) {
+            throw new InvalidTokenException("Invalid or expired refresh token");
+        }
+
+        String tokenHash = hashToken(rawToken);
+        RefreshToken storedToken = refreshTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new InvalidTokenException("Refresh token not recognized"));
+
+        if (storedToken.isRevoked()) {
+            throw new InvalidTokenException("Refresh token has been revoked");
+        }
+
+        if (storedToken.getExpiresAt().isBefore(OffsetDateTime.now())) {
+            throw new InvalidTokenException("Refresh token has expired");
+        }
+
+        storedToken.setRevoked(true);
+        refreshTokenRepository.save(storedToken);
+
+        User user = storedToken.getUser();
+        return issueTokens(user);
+    }
+
+    @Transactional
+    public void logout(RefreshTokenRequest request) {
+        String tokenHash = hashToken(request.getRefreshToken());
+        refreshTokenRepository.findByTokenHash(tokenHash)
+                .ifPresent(token -> {
+                    token.setRevoked(true);
+                    refreshTokenRepository.save(token);
+                });
     }
 }

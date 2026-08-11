@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.secureauth.auth.exception.InvalidTokenException;
 
 import java.time.OffsetDateTime;
 
@@ -35,6 +36,11 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .orElse("Invalid request");
         return build(HttpStatus.BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message) {
