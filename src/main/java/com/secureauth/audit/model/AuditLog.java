@@ -30,8 +30,9 @@ public class AuditLog {
     @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false)
-    private String eventType;
+    private AuditEventType eventType;
 
     @Column(name = "ip_address")
     private String ipAddress;
