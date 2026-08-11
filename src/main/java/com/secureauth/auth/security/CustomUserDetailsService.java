@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -22,6 +23,25 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
+
+        boolean accountNonLocked = user.getLockedUntil() == null
+                || user.getLockedUntil().isBefore(OffsetDateTime.now());
+
+        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .toList();
+
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+                .password(user.getPasswordHash())
+                .disabled(!user.isEnabled())
+                .accountLocked(!accountNonLocked)
+                .authorities(authorities)
+                .build();
+    }
+    public UserDetails loadUserById(String userId) {
+        User user = userRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         boolean accountNonLocked = user.getLockedUntil() == null
                 || user.getLockedUntil().isBefore(OffsetDateTime.now());
