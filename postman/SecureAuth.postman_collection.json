@@ -1,0 +1,172 @@
+{
+  "info": {
+    "name": "SecureAuth API",
+    "description": "Authentication & authorization module — signup, login, JWT refresh rotation, logout, RBAC, and brute-force lockout test sequence.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "access_token", "value": "" },
+    { "key": "refresh_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/signup", "host": ["{{base_url}}"], "path": ["api", "auth", "signup"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/refresh", "host": ["{{base_url}}"], "path": ["api", "auth", "refresh"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/auth/logout", "host": ["{{base_url}}"], "path": ["api", "auth", "logout"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Protected",
+      "item": [
+        {
+          "name": "Get Current User (/me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token}}" }]
+            },
+            "url": { "raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin (RBAC)",
+      "item": [
+        {
+          "name": "List Users (requires ADMIN role)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token}}" }]
+            },
+            "url": { "raw": "{{base_url}}/api/admin/users", "host": ["{{base_url}}"], "path": ["api", "admin", "users"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Security Tests - Brute Force Lockout",
+      "item": [
+        {
+          "name": "Attempt 1 - Wrong Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"WrongPass1!\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Attempt 2 - Wrong Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"WrongPass1!\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Attempt 3 - Wrong Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"WrongPass1!\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Attempt 4 - Wrong Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"WrongPass1!\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Attempt 5 - Wrong Password (triggers lockout)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"WrongPass1!\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Attempt 6 - Correct Password (should be rejected - 423 Locked)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"TestPass123!\"\n}" },
+            "url": { "raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
