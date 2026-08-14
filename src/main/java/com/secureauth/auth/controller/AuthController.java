@@ -12,6 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.secureauth.auth.dto.RefreshTokenRequest;
 
+import com.secureauth.auth.dto.ForgotPasswordRequest;
+import com.secureauth.auth.dto.ResetPasswordRequest;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -51,6 +55,20 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         authService.logout(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        authService.forgotPassword(request, getClientIp(httpRequest));
+        return ResponseEntity.ok(Map.of("message", "If an account with that email exists, a reset link has been sent."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
         return ResponseEntity.noContent().build();
     }
 }

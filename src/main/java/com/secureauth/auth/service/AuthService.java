@@ -25,6 +25,13 @@ import com.secureauth.auth.exception.InvalidCredentialsException;
 import com.secureauth.audit.model.AuditEventType;
 import com.secureauth.audit.service.AuditLogService;
 
+import com.secureauth.auth.dto.ForgotPasswordRequest;
+import com.secureauth.auth.dto.ResetPasswordRequest;
+import com.secureauth.auth.model.PasswordResetToken;
+import com.secureauth.auth.repository.PasswordResetTokenRepository;
+import org.springframework.beans.factory.annotation.Value;
+import java.security.SecureRandom;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
@@ -43,6 +50,10 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuditLogService auditLogService;
     private final LoginAttemptService loginAttemptService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Value("${app.security.password-reset-expiration-minutes}")
+    private int passwordResetExpirationMinutes;
 
     @Transactional
     public AuthResponse signup(SignupRequest request, String ipAddress) {
@@ -125,6 +136,7 @@ public class AuthService {
 
         return issueTokens(user);
     }
+
     @Transactional
     public AuthResponse refresh(RefreshTokenRequest request) {
         String rawToken = request.getRefreshToken();
@@ -164,5 +176,63 @@ public class AuthService {
                     token.setRevoked(true);
                     refreshTokenRepository.save(token);
                 });
+    }
+
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request, String ipAddress) {
+        userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
+            String rawToken = generateSecureToken();
+
+            PasswordResetToken resetToken = PasswordResetToken.builder()
+                    .user(user)
+                    .tokenHash(hashToken(rawToken))
+                    .expiresAt(OffsetDateTime.now().plusMinutes(passwordResetExpirationMinutes))
+                    .used(false)
+                    .build();
+            passwordResetTokenRepository.save(resetToken);
+
+            auditLogService.log(user, AuditEventType.PASSWORD_RESET_REQUESTED, ipAddress, null);
+
+            // MOCKED EMAIL DELIVERY — logs the reset link instead of sending a real email.
+            // Replace with a real mail provider (SMTP, SendGrid, etc.) for production.
+            System.out.println("=== PASSWORD RESET LINK (mocked email) ===");
+            System.out.println("To: " + user.getEmail());
+            System.out.println("Reset token: " + rawToken);
+            System.out.println("Expires in " + passwordResetExpirationMinutes + " minutes");
+            System.out.println("===========================================");
+        });
+        // Always returns silently, whether the email existed or not — prevents user enumeration.
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String tokenHash = hashToken(request.getToken());
+
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new InvalidTokenException("Invalid or expired reset token"));
+
+        if (resetToken.isUsed()) {
+            throw new InvalidTokenException("This reset token has already been used");
+        }
+
+        if (resetToken.getExpiresAt().isBefore(OffsetDateTime.now())) {
+            throw new InvalidTokenException("Reset token has expired");
+        }
+
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+
+        auditLogService.log(user, AuditEventType.PASSWORD_RESET_SUCCESS, null, null);
+    }
+
+    private String generateSecureToken() {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] randomBytes = new byte[32];
+        secureRandom.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 }
