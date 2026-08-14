@@ -9,7 +9,8 @@ A secure, reusable authentication & authorization module for web applications, b
 - Role-based access control (RBAC)
 - Password hashing with BCrypt
 - Brute-force protection (account lockout after repeated failed logins)
-- Security audit logging (logins, failures, lockouts)
+- Password reset via one-time, expiring token
+- Security audit logging (logins, failures, lockouts, password resets)
 - CORS and HTTP security headers configured
 - Database schema fully versioned via Flyway migrations
 
@@ -88,18 +89,24 @@ Flyway will automatically create the schema and seed the `USER`/`ADMIN` roles on
 | POST | `/api/auth/login` | No | Authenticate and receive tokens |
 | POST | `/api/auth/refresh` | No (valid refresh token) | Rotate a refresh token for a new token pair |
 | POST | `/api/auth/logout` | No (valid refresh token) | Revoke a refresh token |
+| POST | `/api/auth/forgot-password` | No | Request a password reset (mocked email delivery — see note below) |
+| POST | `/api/auth/reset-password` | No (valid reset token) | Set a new password using a reset token |
 | GET | `/api/users/me` | Yes | Get the authenticated user's info |
 | GET | `/api/admin/users` | Yes (ADMIN role) | List all users (admin only) |
 
 A ready-to-import Postman collection covering all endpoints, including a brute-force lockout test sequence, is available at `postman/SecureAuth.postman_collection.json`.
 
+**Note on password reset email delivery:** for development, the reset link/token is printed to the application console instead of being emailed, so the full flow can be tested without configuring a mail provider. Swapping in a real provider (SMTP, SendGrid, etc.) only requires replacing the delivery step in `AuthService.forgotPassword()` — the token generation, expiry, and validation logic is unchanged.
+
 ## Security Design Notes
 
 - Passwords are hashed with BCrypt and never logged or returned by the API.
-- Refresh tokens are stored in the database as SHA-256 hashes, never in raw form.
+- Refresh tokens and password reset tokens are stored in the database as SHA-256 hashes, never in raw form.
 - Refresh tokens rotate on every use — reusing an old, already-exchanged refresh token is rejected and the token revoked.
+- Password reset tokens are single-use and expire after 15 minutes.
+- The forgot-password endpoint always returns the same response whether or not the email exists, to prevent account enumeration.
 - Accounts lock for 15 minutes after 5 failed login attempts, in line with OWASP guidance.
-- All security-relevant events (signup, login success/failure, lockout) are recorded in an audit log with timestamp and IP address.
+- All security-relevant events (signup, login success/failure, lockout, password reset) are recorded in an audit log with timestamp and IP address.
 - Database schema is managed exclusively through Flyway migrations (`src/main/resources/db/migration`) — no automatic schema generation in the running application.
 
 ## Project Structure
