@@ -1,44 +1,50 @@
-import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { UserCircle, ShieldCheck, KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import * as authApi from '../api/authApi';
+
+function initials(email) {
+  return email ? email.charAt(0).toUpperCase() : '?';
+}
 
 function Dashboard() {
-  const { user, logout } = useAuth();
-  const [me, setMe] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    authApi.getCurrentUser()
-      .then((response) => setMe(response.data))
-      .catch(() => setError('Could not load your profile.'));
-  }, []);
+  const { user } = useAuth();
 
   return (
-    <div className="page">
-      <div className="card">
-        <h1>Dashboard</h1>
-        <p>
-          Welcome back, <strong>{user?.email}</strong>
-        </p>
-        <p>
-          Role:{' '}
-          <span className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>
-            {user?.role}
-          </span>
-        </p>
+    <div className="page-wide">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+        <div className="avatar avatar-lg">{initials(user?.email)}</div>
+        <div>
+          <h1 style={{ marginBottom: '0.15rem' }}>Welcome back</h1>
+          <p style={{ margin: 0 }}>{user?.email}</p>
+        </div>
+        <span
+          className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}
+          style={{ marginLeft: 'auto' }}
+        >
+          {user?.role}
+        </span>
+      </div>
 
-        {error && <p className="alert-error">{error}</p>}
-        {me && (
-          <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)' }}>
-            <h2>Live data from /api/users/me</h2>
-            <p>Email: {me.email}</p>
-            <p>Authorities: {me.authorities?.map((a) => a.authority).join(', ')}</p>
-          </div>
+      <div className="feature-grid" style={{ margin: 0 }}>
+        <Link to="/profile" className="feature-card" style={{ display: 'block', color: 'inherit' }}>
+          <UserCircle size={22} />
+          <h3>Your Profile</h3>
+          <p>View your account details and change your password.</p>
+        </Link>
+
+        <div className="feature-card">
+          <ShieldCheck size={22} />
+          <h3>Account Security</h3>
+          <p>Your session is protected by short-lived JWT access tokens.</p>
+        </div>
+
+        {user?.role === 'ADMIN' && (
+          <Link to="/admin" className="feature-card" style={{ display: 'block', color: 'inherit' }}>
+            <KeyRound size={22} />
+            <h3>Admin Panel</h3>
+            <p>Manage all user accounts and permissions.</p>
+          </Link>
         )}
-
-        <button className="btn btn-secondary" onClick={logout} style={{ marginTop: '1rem' }}>
-          Logout
-        </button>
       </div>
     </div>
   );

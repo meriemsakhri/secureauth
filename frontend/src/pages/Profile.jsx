@@ -39,22 +39,18 @@ function Profile() {
 
   return (
     <div className="page">
-      <div className="card">
-        <h1>Profile</h1>
-        <div className="form-group">
-          <label>Email</label>
-          <p style={{ color: 'var(--color-text)', fontWeight: 500 }}>{user?.email}</p>
+      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.25rem' }}>
+        <div className="avatar avatar-lg">{user?.email.charAt(0).toUpperCase()}</div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h2 style={{ marginBottom: '0.2rem', wordBreak: 'break-word' }}>{user?.email}</h2>
+          <span className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>
+            {user?.role}
+          </span>
         </div>
-        <div className="form-group">
-          <label>Role</label>
-          <p>
-            <span className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>
-              {user?.role}
-            </span>
-          </p>
-        </div>
+      </div>
 
-        <h2 style={{ marginTop: '2rem' }}>Change Password</h2>
+      <div className="card">
+        <h2>Change Password</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="currentPassword">Current password</label>

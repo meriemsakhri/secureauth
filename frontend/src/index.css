@@ -256,3 +256,133 @@ th {
 tr:last-child td {
   border-bottom: none;
 }
+/* Home page */
+.hero {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 4rem 1.25rem 2rem;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 2.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.hero p {
+  font-size: 1.05rem;
+  max-width: 520px;
+  margin: 0 auto 1.75rem;
+}
+
+.cta-group {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.cta-group .btn-primary {
+  width: auto;
+  padding: 0.7rem 1.6rem;
+}
+
+.feature-grid {
+  max-width: 900px;
+  margin: 1rem auto 3rem;
+  padding: 0 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.feature-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.4rem;
+}
+
+.feature-card svg {
+  color: var(--color-primary);
+  margin-bottom: 0.6rem;
+}
+
+.feature-card h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem 0;
+  color: var(--color-text);
+}
+
+.feature-card p {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+/* Avatar */
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.avatar-lg {
+  width: 72px;
+  height: 72px;
+  font-size: 1.6rem;
+}
+/* Account dropdown */
+.account-menu {
+  position: relative;
+}
+
+.account-trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+
+.account-dropdown {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.9rem 1.1rem;
+  min-width: 280px;
+  z-index: 20;
+}
+
+.account-dropdown-email {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  word-break: break-word;
+  margin-bottom: 0.5rem;
+}
+
+.account-dropdown-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 0.75rem 0;
+}
+
+.account-dropdown-link {
+  display: block;
+  padding: 0.4rem 0;
+  font-size: 0.88rem;
+}
