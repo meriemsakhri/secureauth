@@ -14,21 +14,32 @@ function Dashboard() {
   }, []);
 
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Welcome, {user?.email}</p>
-      <p>Role: {user?.role}</p>
+    <div className="page">
+      <div className="card">
+        <h1>Dashboard</h1>
+        <p>
+          Welcome back, <strong>{user?.email}</strong>
+        </p>
+        <p>
+          Role:{' '}
+          <span className={`badge ${user?.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>
+            {user?.role}
+          </span>
+        </p>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {me && (
-        <div>
-          <h3>Data from /api/users/me:</h3>
-          <p>Email: {me.email}</p>
-          <p>Authorities: {me.authorities?.map((a) => a.authority).join(', ')}</p>
-        </div>
-      )}
+        {error && <p className="alert-error">{error}</p>}
+        {me && (
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)' }}>
+            <h2>Live data from /api/users/me</h2>
+            <p>Email: {me.email}</p>
+            <p>Authorities: {me.authorities?.map((a) => a.authority).join(', ')}</p>
+          </div>
+        )}
 
-      <button onClick={logout}>Logout</button>
+        <button className="btn btn-secondary" onClick={logout} style={{ marginTop: '1rem' }}>
+          Logout
+        </button>
+      </div>
     </div>
   );
 }

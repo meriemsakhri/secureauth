@@ -22,30 +22,32 @@ function ForgotPassword() {
   };
 
   return (
-    <div>
-      <h1>Forgot Password</h1>
-      {!message ? (
-        <form onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit" disabled={loading}>
-            {loading ? 'Sending...' : 'Send reset link'}
-          </button>
-        </form>
-      ) : (
-        <p>{message}</p>
-      )}
-      <p>
-        <Link to="/login">Back to login</Link>
-      </p>
+    <div className="page">
+      <div className="card">
+        <h1>Forgot Password</h1>
+        {!message ? (
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Sending...' : 'Send reset link'}
+            </button>
+          </form>
+        ) : (
+          <p className="alert-success">{message}</p>
+        )}
+        <p className="helper-text">
+          <Link to="/login">Back to login</Link>
+        </p>
+      </div>
     </div>
   );
 }

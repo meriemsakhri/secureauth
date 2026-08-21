@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PasswordInput from '../components/PasswordInput';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -10,6 +11,8 @@ function Login() {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = location.state?.message;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,40 +31,37 @@ function Login() {
   };
 
   return (
-    <div>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit" disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-      <p>
-        <Link to="/forgot-password">Forgot password?</Link>
-      </p>
-      <p>
-        Don't have an account? <Link to="/signup">Sign up</Link>
-      </p>
+    <div className="page">
+      <div className="card">
+        <h1>Login</h1>
+        {successMessage && <p className="alert-success" style={{ marginBottom: '1rem' }}>{successMessage}</p>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          {error && <p className="alert-error">{error}</p>}
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+        <p className="helper-text">
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
+        <p className="helper-text">
+          Don't have an account? <Link to="/signup">Sign up</Link>
+        </p>
+      </div>
     </div>
   );
 }

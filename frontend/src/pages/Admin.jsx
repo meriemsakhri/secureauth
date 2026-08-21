@@ -13,14 +13,13 @@ function Admin() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p>Loading users...</p>;
-
   return (
-    <div>
+    <div className="page-wide">
       <h1>Admin — All Users</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {!error && (
-        <table border="1" cellPadding="8">
+      {error && <p className="alert-error">{error}</p>}
+      {loading && <p>Loading users...</p>}
+      {!loading && !error && (
+        <table>
           <thead>
             <tr>
               <th>Email</th>
