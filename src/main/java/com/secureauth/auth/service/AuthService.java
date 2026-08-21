@@ -27,6 +27,7 @@ import com.secureauth.audit.service.AuditLogService;
 
 import com.secureauth.auth.dto.ForgotPasswordRequest;
 import com.secureauth.auth.dto.ResetPasswordRequest;
+import com.secureauth.auth.dto.ChangePasswordRequest;
 import com.secureauth.auth.model.PasswordResetToken;
 import com.secureauth.auth.repository.PasswordResetTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -222,6 +223,21 @@ public class AuthService {
         passwordResetTokenRepository.save(resetToken);
 
         auditLogService.log(user, AuditEventType.PASSWORD_RESET_SUCCESS, null, null);
+    }
+
+    @Transactional
+    public void changePassword(String userEmail, ChangePasswordRequest request, String ipAddress) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException("Current password is incorrect");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        auditLogService.log(user, AuditEventType.PASSWORD_CHANGED, ipAddress, null);
     }
 
     private String generateSecureToken() {
