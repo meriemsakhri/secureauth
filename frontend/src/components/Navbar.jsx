@@ -12,6 +12,7 @@ function Navbar() {
       {user ? (
         <>
           <Link to="/dashboard">Dashboard</Link>
+          <Link to="/profile">Profile</Link>
           {user.role === 'ADMIN' && <Link to="/admin">Admin</Link>}
           <div className="navbar-spacer">
             <span className={`badge ${user.role === 'ADMIN' ? 'badge-admin' : 'badge-user'}`}>

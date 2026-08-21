@@ -23,3 +23,6 @@ export const getCurrentUser = () =>
 
 export const getAllUsers = () =>
   api.get('/admin/users');
+
+export const changePassword = (currentPassword, newPassword) =>
+  api.put('/users/me/password', { currentPassword, newPassword });
