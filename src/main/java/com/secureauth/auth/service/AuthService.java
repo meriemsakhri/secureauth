@@ -51,6 +51,7 @@ public class AuthService {
     private final AuditLogService auditLogService;
     private final LoginAttemptService loginAttemptService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
 
     @Value("${app.security.password-reset-expiration-minutes}")
     private int passwordResetExpirationMinutes;
@@ -193,13 +194,7 @@ public class AuthService {
 
             auditLogService.log(user, AuditEventType.PASSWORD_RESET_REQUESTED, ipAddress, null);
 
-            // MOCKED EMAIL DELIVERY — logs the reset link instead of sending a real email.
-            // Replace with a real mail provider (SMTP, SendGrid, etc.) for production.
-            System.out.println("=== PASSWORD RESET LINK (mocked email) ===");
-            System.out.println("To: " + user.getEmail());
-            System.out.println("Reset token: " + rawToken);
-            System.out.println("Expires in " + passwordResetExpirationMinutes + " minutes");
-            System.out.println("===========================================");
+            emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
         });
         // Always returns silently, whether the email existed or not — prevents user enumeration.
     }
