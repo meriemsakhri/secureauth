@@ -1,6 +1,6 @@
 # SecureAuth
 
-A secure, reusable authentication & authorization module for web applications, built with Spring Boot and PostgreSQL. Developed as part of a cybersecurity internship at Proxym-IT.
+A secure, reusable authentication & authorization module for web applications, built with Spring Boot and PostgreSQL, with a React frontend. Developed as part of a cybersecurity internship at Proxym-IT.
 
 ## Features
 
@@ -9,18 +9,17 @@ A secure, reusable authentication & authorization module for web applications, b
 - Role-based access control (RBAC)
 - Password hashing with BCrypt
 - Brute-force protection (account lockout after repeated failed logins)
-- Password reset via one-time, expiring token
-- Security audit logging (logins, failures, lockouts, password resets)
+- Password reset via one-time, expiring token, delivered by real email (Brevo)
+- Self-service password change (requires current password)
+- Security audit logging (logins, failures, lockouts, password changes/resets)
 - CORS and HTTP security headers configured
 - Database schema fully versioned via Flyway migrations
+- React frontend: login, signup, password recovery, dashboard, profile, and an admin panel
 
 ## Tech Stack
 
-- **Backend:** Spring Boot 4.1, Spring Security 7, Java 21
-- **Database:** PostgreSQL 17 (via Docker)
-- **Auth:** JWT (jjwt), BCrypt
-- **Migrations:** Flyway
-- **Build:** Maven
+**Backend:** Spring Boot 4.1, Spring Security 7, Java 21, PostgreSQL 17 (via Docker), JWT (jjwt), BCrypt, Flyway, Spring Mail (Brevo SMTP)
+**Frontend:** React (Vite), React Router, Axios
 
 ## Getting Started
 
@@ -28,6 +27,7 @@ A secure, reusable authentication & authorization module for web applications, b
 
 - JDK 21
 - Docker Desktop
+- Node.js (for the frontend)
 - Maven (or use the included `mvnw` wrapper)
 
 ### 1. Clone the repository
@@ -55,6 +55,12 @@ DB_PORT=5432
 JWT_SECRET=your_own_base64_256bit_secret
 JWT_ACCESS_EXPIRATION_MS=900000
 JWT_REFRESH_EXPIRATION_MS=604800000
+
+BREVO_SMTP_USERNAME=your_brevo_smtp_login
+BREVO_SMTP_PASSWORD=your_brevo_smtp_key
+MAIL_FROM=your_verified_sender_email
+
+FRONTEND_URL=http://localhost:5173
 ```
 
 Generate a proper JWT secret with:
@@ -62,13 +68,15 @@ Generate a proper JWT secret with:
 openssl rand -base64 32
 ```
 
+Email sending requires a free [Brevo](https://www.brevo.com) account with a verified sender and SMTP credentials.
+
 ### 3. Start the database
 
 ```bash
 docker compose up -d
 ```
 
-### 4. Run the application
+### 4. Run the backend
 
 Via IntelliJ: run `SecureauthApplication`, with the `.env` file loaded as environment variables (see the EnvFile plugin, or set them manually in your Run Configuration).
 
@@ -77,9 +85,17 @@ Via terminal:
 ./mvnw spring-boot:run
 ```
 
-The API will be available at `http://localhost:8080`.
+The API runs at `http://localhost:8080`. Flyway automatically creates the schema and seeds the `USER`/`ADMIN` roles on first run.
 
-Flyway will automatically create the schema and seed the `USER`/`ADMIN` roles on first run.
+### 5. Run the frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The app runs at `http://localhost:5173`.
 
 ## API Endpoints
 
@@ -89,14 +105,13 @@ Flyway will automatically create the schema and seed the `USER`/`ADMIN` roles on
 | POST | `/api/auth/login` | No | Authenticate and receive tokens |
 | POST | `/api/auth/refresh` | No (valid refresh token) | Rotate a refresh token for a new token pair |
 | POST | `/api/auth/logout` | No (valid refresh token) | Revoke a refresh token |
-| POST | `/api/auth/forgot-password` | No | Request a password reset (mocked email delivery — see note below) |
+| POST | `/api/auth/forgot-password` | No | Request a password reset email |
 | POST | `/api/auth/reset-password` | No (valid reset token) | Set a new password using a reset token |
 | GET | `/api/users/me` | Yes | Get the authenticated user's info |
+| PUT | `/api/users/me/password` | Yes | Change your own password (requires current password) |
 | GET | `/api/admin/users` | Yes (ADMIN role) | List all users (admin only) |
 
-A ready-to-import Postman collection covering all endpoints, including a brute-force lockout test sequence, is available at `postman/SecureAuth.postman_collection.json`.
-
-**Note on password reset email delivery:** for development, the reset link/token is printed to the application console instead of being emailed, so the full flow can be tested without configuring a mail provider. Swapping in a real provider (SMTP, SendGrid, etc.) only requires replacing the delivery step in `AuthService.forgotPassword()` — the token generation, expiry, and validation logic is unchanged.
+A ready-to-import Postman collection covering the core endpoints, including a brute-force lockout test sequence, is available at `postman/SecureAuth.postman_collection.json`.
 
 ## Security Design Notes
 
@@ -106,8 +121,10 @@ A ready-to-import Postman collection covering all endpoints, including a brute-f
 - Password reset tokens are single-use and expire after 15 minutes.
 - The forgot-password endpoint always returns the same response whether or not the email exists, to prevent account enumeration.
 - Accounts lock for 15 minutes after 5 failed login attempts, in line with OWASP guidance.
-- All security-relevant events (signup, login success/failure, lockout, password reset) are recorded in an audit log with timestamp and IP address.
+- Password change requires the current password and is separate from the reset flow.
+- All security-relevant events (signup, login success/failure, lockout, password reset/change) are recorded in an audit log with timestamp and IP address.
 - Database schema is managed exclusively through Flyway migrations (`src/main/resources/db/migration`) — no automatic schema generation in the running application.
+- Access and refresh tokens are stored in `localStorage` on the frontend. This is a documented trade-off for project scope; an httpOnly cookie would be more resistant to XSS-based token theft in a production deployment.
 
 ## Project Structure
 
@@ -115,15 +132,21 @@ A ready-to-import Postman collection covering all endpoints, including a brute-f
 com.secureauth
 ├── auth/
 │   ├── controller/   REST endpoints
-│   ├── service/      Business logic (auth, JWT, login attempts)
+│   ├── service/      Business logic (auth, JWT, login attempts, email)
 │   ├── model/         JPA entities
 │   ├── repository/    Spring Data JPA repositories
 │   ├── dto/            Request/response objects
 │   ├── security/       Security config, JWT filter, user details service
 │   └── exception/      Custom exceptions and global error handling
 └── audit/               Security event logging (cross-cutting concern)
+
+frontend/src/
+├── api/                Axios instance and API call functions
+├── context/             Global auth state (AuthContext)
+├── components/          Reusable UI (Navbar, ProtectedRoute, PasswordInput)
+└── pages/                Login, Signup, Dashboard, Profile, Admin, etc.
 ```
 
 ## Status
 
-This project is under active development as part of a 1-month internship. See the project's progress reports for current completion status.
+This project is under active development as part of a 1-month internship. See the project's weekly progress reports for current completion status.
